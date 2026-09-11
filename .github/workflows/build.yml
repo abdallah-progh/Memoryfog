@@ -21,22 +21,29 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Locate gradlew
-        id: findgradle
+      - name: Locate project directory
+        id: findproj
         run: |
-          GRADLEW_PATH=$(find extracted -name "gradlew" | head -n 1)
-          PROJECT_DIR=$(dirname "$GRADLEW_PATH")
+          SETTINGS_PATH=$(find extracted -name "settings.gradle*" | head -n 1)
+          PROJECT_DIR=$(dirname "$SETTINGS_PATH")
           echo "project_dir=$PROJECT_DIR" >> $GITHUB_OUTPUT
+          echo "Found project at: $PROJECT_DIR"
+          ls -la "$PROJECT_DIR"
 
-      - name: Grant execute permission
-        run: chmod +x ${{ steps.findgradle.outputs.project_dir }}/gradlew
+      - name: Install Gradle
+        uses: gradle/actions/setup-gradle@v4
 
-      - name: Build Debug APK
-        working-directory: ${{ steps.findgradle.outputs.project_dir }}
-        run: ./gradlew assembleDebug
+      - name: Generate wrapper if missing, then build
+        working-directory: ${{ steps.findproj.outputs.project_dir }}
+        run: |
+          if [ ! -f "./gradlew" ]; then
+            gradle wrapper --gradle-version 8.9
+          fi
+          chmod +x ./gradlew
+          ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: ${{ steps.findgradle.outputs.project_dir }}/app/build/outputs/apk/debug/*.apk
+          path: ${{ steps.findproj.outputs.project_dir }}/app/build/outputs/apk/debug/*.apk
