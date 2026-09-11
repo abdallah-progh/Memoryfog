@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
       - name: Locate project directory
         id: findproj
@@ -32,15 +32,13 @@ jobs:
 
       - name: Install Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: wrapper
 
-      - name: Generate wrapper if missing, then build
+      - name: Build with system Gradle
         working-directory: ${{ steps.findproj.outputs.project_dir }}
         run: |
-          if [ ! -f "./gradlew" ]; then
-            gradle wrapper --gradle-version 8.9
-          fi
-          chmod +x ./gradlew
-          ./gradlew assembleDebug
+          gradle assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
